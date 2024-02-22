@@ -11,6 +11,9 @@ from solidity_parser.solidity_antlr4.SolidityLexer import SolidityLexer
 from solidity_parser.solidity_antlr4.SolidityParser import SolidityParser
 from solidity_parser.solidity_antlr4.SolidityVisitor import SolidityVisitor
 
+import threading
+import queue
+
 
 class Node(dict):
     """
@@ -47,6 +50,9 @@ class Node(dict):
 
 
 class AstVisitor(SolidityVisitor):
+
+    def __init__(self):
+        self.require_locations = []
 
     def _mapCommasToNulls(self, children):
         if not children or len(children) == 0:
@@ -89,6 +95,8 @@ class AstVisitor(SolidityVisitor):
         elif isinstance(tree, list):
             return self._visit_nodes(tree)
         else:
+            if isinstance(tree, SolidityParser.ExpressionStatementContext) and tree.getText() != 'require' and 'require' in tree.getText():
+                self.require_locations.append((tree.start.line, tree.start.column, tree.stop.line, tree.stop.column))
             return super().visit(tree)
 
     def _visit_nodes(self, nodes):
@@ -1035,12 +1043,15 @@ def parse(text, start="sourceUnit", loc=False, strict=False):
 
     Node.ENABLE_LOC = loc
 
-    return ast.visit(getattr(parser, start)())
+    ast.visit(getattr(parser, start)())
+
+    return ast.require_locations
 
 
 def parse_file(path, start="sourceUnit", loc=False, strict=False):
     with open(path, 'r', encoding="utf-8") as f:
         return parse(f.read(), start=start, loc=loc, strict=strict)
+
 
 
 def visit(node, callback_object):
