@@ -2,7 +2,7 @@
 
 set -o errexit
 
-antlr -Dlanguage=Python3 solidity-antlr4/Solidity.g4 -o src -visitor
+antlr4 -Dlanguage=Python3 solidity-antlr4/Solidity.g4 -o src -visitor
 
 mv src/solidity-antlr4/* solidity_parser/solidity_antlr4
 rm -rf src/solidity-antlr4
